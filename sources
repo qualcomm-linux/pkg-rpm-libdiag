@@ -1,8 +1,1 @@
-# Checksum below is a PLACEHOLDER — the real tarball at Source0 could not be
-# fetched while authoring this spec (Artifactory returned 401/403 on
-# anonymous access, same gap tracked for qmi-framework in
-# qualcomm-linux/pkg-rpm-time-services). Replace before the first real build:
-#
-#   sha512sum --tag qcom-diag_1.0.4_arm64.tar.gz > sources
-#
-SHA512 (qcom-diag_1.0.4_arm64.tar.gz) = REPLACE_ME_WITH_THE_REAL_SHA512_OF_YOUR_TARBALL
+SHA512 (qcom-diag_1.0.4_arm64.tar.gz) = 249ff2e9d7c2f79ae3fccc459262f80b93e49083c42e855bd792b7c93c683c29621193314d89bbe0211edc1371ac0e656dc9929cd32f8073be197017b4bd34fb

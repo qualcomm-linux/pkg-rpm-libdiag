@@ -30,27 +30,16 @@ sources                   # dist-git checksum pointer for the qcom-diag prebuilt
 
 This RPM packages the same Artifactory-published prebuilt binary tarball as
 the Debian packaging in
-[`qualcomm-linux/pkg-libdiag`](https://github.com/qualcomm-linux/pkg-libdiag)
-(`qcom/ubuntu/resolute` branch, `upstream.conf`): the Qualcomm diagnostic
-(diag) shared library and command-line tools, used to route diagnostic
-messages between the host and modem. Debian splits this into three packages
-(`qcom-libdiag`, `qcom-libdiag-dev`, `qcom-diag`); this spec bundles the
-runtime library/tools into `libdiag` and the headers/pkg-config files into
-`libdiag-devel`, matching the RPM `-devel` subpackage convention.
-
-[`pkg-rpm-diag-router`](https://github.com/qualcomm-linux/pkg-rpm-diag-router)
-packages the companion `qcom-diag-router` daemon and depends on this package.
+[`qualcomm-linux/pkg-libdiag`](https://github.com/qualcomm-linux/pkg-libdiag):
+the Qualcomm diagnostic (diag) shared library and command-line tools, used to
+route diagnostic messages between the host and modem.
 
 > **Known gap:** the upstream tarball at `Source0` lives behind
 > `qartifactory-edge.qualcomm.com`, which returned 401/403 on anonymous access
-> while authoring this spec — the same access gap already tracked for
-> `qmi-framework` in
-> [`pkg-rpm-time-services`](https://github.com/qualcomm-linux/pkg-rpm-time-services)'s
-> README. The `sources` file therefore holds a **placeholder checksum** and
-> the `%install` layout (which directory in the tarball maps to which RPM
-> file) is inferred from the Debian packaging's `debian/rules`, not verified
-> against the real archive. Both must be confirmed/corrected once the tarball
-> is fetchable.
+> while authoring this spec — the same access gap tracked for `qmi-framework`
+> in [`pkg-rpm-time-services`](https://github.com/qualcomm-linux/pkg-rpm-time-services)'s
+> README. The `sources` file holds a placeholder checksum until the tarball
+> is fetchable and the real one can be computed.
 
 ---
 
@@ -60,9 +49,8 @@ packages the companion `qcom-diag-router` daemon and depends on this package.
 
 Two edits, every time:
 
-1. Bump `Version:` in [`libdiag.spec`](libdiag.spec) (and the `Source0:` URL's
-   `TAG`/filename if the upstream Artifactory path changed — see
-   `upstream.conf` in `pkg-libdiag` for the current `TAG`/`PACKAGE_NAME`).
+1. Bump `Version:` in [`libdiag.spec`](libdiag.spec) (and the `Source0:` URL
+   if the upstream Artifactory path changed).
 2. Recompute the checksum:
    ```bash
    sha512sum --tag qcom-diag_<newversion>_arm64.tar.gz > sources

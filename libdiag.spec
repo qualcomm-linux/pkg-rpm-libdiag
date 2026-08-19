@@ -13,6 +13,12 @@ URL:            https://github.com/qualcomm-linux/pkg-libdiag
 # own naming ("qcom-diag_<ver>_arm64") doesn't match this package's Name:.
 Source0:        https://qartifactory-edge.qualcomm.com/artifactory/qsc_releases/software/chip/component/core-technologies.qclinux.0.0/260513/prebuilt_resolute/qcom-diag_1.0.4_arm64.tar.gz
 
+# Prebuilt aarch64 ELF binaries only; building on another arch would mislabel
+# the RPM. Skip auto debuginfo extraction: there is no matching source tree
+# for find-debuginfo to pair with these prebuilt binaries.
+ExclusiveArch:  aarch64
+%global debug_package %{nil}
+
 %description
 Shared library and command-line tools for the Qualcomm diagnostic (diag)
 framework, used to route diagnostic messages between the host and modem.
@@ -34,22 +40,20 @@ Headers, static libraries, and pkg-config files for %{name}.
 
 %install
 rm -rf %{buildroot}
-# NOTE: the tarball's internal layout could not be verified while packaging
-# this spec (Artifactory returns 401/403 on anonymous access — same gap noted
-# in pkg-rpm-time-services/README.md for qmi-framework). This mirrors the
-# Debian packaging's arm64 install layout in qualcomm-linux/pkg-libdiag
-# (debian/rules: data/qcom-libdiag/arm64, data/qcom-libdiag-dev/arm64,
-# data/qcom-diag/arm64) and MUST be verified/adjusted once the real tarball
-# is fetchable.
+# Verified against the real tarball fetched from Source0: the Debian-multiarch
+# tree uses usr/lib/aarch64-linux-gnu (not usr/lib64), and libdiag.so.1's real
+# target is libdiag.so.1.0.3 even though the package version is 1.0.4. The
+# tarball ships no top-level LICENSE/README.md (Debian-style per-component
+# doc/copyright files instead), so %license/%doc below point at those.
 mkdir -p %{buildroot}%{_libdir} %{buildroot}%{_bindir} %{buildroot}%{_includedir}
-cp -a data/qcom-libdiag/arm64/usr/lib64/* %{buildroot}%{_libdir}/ 2>/dev/null || :
-cp -a data/qcom-diag/arm64/usr/bin/* %{buildroot}%{_bindir}/ 2>/dev/null || :
-cp -a data/qcom-libdiag-dev/arm64/usr/include/* %{buildroot}%{_includedir}/ 2>/dev/null || :
-cp -a data/qcom-libdiag-dev/arm64/usr/lib64/pkgconfig %{buildroot}%{_libdir}/ 2>/dev/null || :
+cp -a data/qcom-libdiag/arm64/usr/lib/aarch64-linux-gnu/. %{buildroot}%{_libdir}/
+cp -a data/qcom-diag/arm64/usr/bin/. %{buildroot}%{_bindir}/
+cp -a data/qcom-libdiag-dev/arm64/usr/include/. %{buildroot}%{_includedir}/
+cp -a data/qcom-libdiag-dev/arm64/usr/lib/aarch64-linux-gnu/pkgconfig %{buildroot}%{_libdir}/
 
 %files
-%license LICENSE.txt
-%doc README.md
+%license data/qcom-diag/arm64/usr/share/doc/qcom-diag/copyright
+%doc data/qcom-diag/arm64/usr/share/doc/qcom-diag/changelog.gz
 %{_libdir}/*.so*
 %{_bindir}/*
 
