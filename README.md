@@ -32,42 +32,24 @@ This RPM packages the same Artifactory-published prebuilt binary tarball as
 the Debian packaging in
 [`qualcomm-linux/pkg-libdiag`](https://github.com/qualcomm-linux/pkg-libdiag):
 the Qualcomm diagnostic (diag) shared library and command-line tools, used to
-route diagnostic messages between the host and modem.
+route diagnostic messages between the host and MSM.
 
-> **Known gap:** the upstream tarball at `Source0` lives behind
-> `qartifactory-edge.qualcomm.com`, which returned 401/403 on anonymous access
-> while authoring this spec — the same access gap tracked for `qmi-framework`
-> in [`pkg-rpm-time-services`](https://github.com/qualcomm-linux/pkg-rpm-time-services)'s
-> README. The `sources` file holds a placeholder checksum until the tarball
-> is fetchable and the real one can be computed.
+The current `sources` file contains the SHA512 checksum for
+`diag-1.0.5_1.el10.aarch64.tar.gz`. Keep the `Source0:` filename in
+[`libdiag.spec`](libdiag.spec) and the filename in `sources` synchronized when
+updating the package.
+
+## Package contents
+
+The spec produces three RPMs from the prebuilt payload:
+
+| Package | Contents | Use when you need |
+|---|---|---|
+| `qcom-libdiag` | Versioned `libdiag.so.1*` runtime library and license | Applications that use the diag shared library at runtime. |
+| `qcom-diag` | Command-line tools and sample applications | The diag utilities; this package requires `qcom-libdiag`. |
+| `qcom-libdiag-devel` | Headers, the unversioned `libdiag.so` symlink, and `diag.pc` | Building applications against libdiag; this package requires `qcom-libdiag`. |
+
+The payload contains prebuilt **aarch64** binaries, so the package is restricted
+to that architecture.
 
 ---
-
-## Getting started
-
-### Update the version
-
-Two edits, every time:
-
-1. Bump `Version:` in [`libdiag.spec`](libdiag.spec) (and the `Source0:` URL
-   if the upstream Artifactory path changed).
-2. Recompute the checksum:
-   ```bash
-   sha512sum --tag qcom-diag_<newversion>_arm64.tar.gz > sources
-   ```
-
-Commit both, open a PR against this branch, merge, then run **Release**. The
-first release fetches the new upstream tarball, verifies it, and caches it back
-automatically.
-
-### Open a PR
-
-`build-on-pr` fetches the tarball (from the lookaside cache, or from the spec's
-`Source` URL on a cache miss), verifies the checksum, and builds the RPM.
-Download it from the run's **Artifacts**.
-
-### Release
-
-**Actions → Release → Run workflow**, selecting this branch. A reviewer
-approves the `pkg-release-approval` gate, then the RPM publishes to
-Artifactory.
