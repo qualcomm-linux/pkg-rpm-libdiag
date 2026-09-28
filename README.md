@@ -1,183 +1,108 @@
-# pkg-rpm-template
+# Qualcomm libdiag RPM packaging
 
-Template repository for creating RPM package repositories for Qualcomm® Linux.
+This repository contains the RPM packaging for Qualcomm's diagnostic (`diag`)
+framework. The library and tools route diagnostic messages between the host and
+modem.
 
-Clone this template to create a `pkg-rpm-<component>` repo for **one** RPM
-package. You add your spec file and a small `sources` pointer; the shipped
-GitHub Actions workflows build the RPM on every PR and publish it to Artifactory
-on demand. All build/release logic lives in the shared
-[`qualcomm-linux/qcom-rpm-utils`](https://github.com/qualcomm-linux/qcom-rpm-utils)
-repo — the workflows here are thin callers.
+The packaged payload is a prebuilt binary release. This repository does not
+compile the diag sources; the RPM spec stages the files from the upstream
+Artifactory tarball and splits them into runtime, tools, and development
+packages.
+
+The corresponding Debian packaging is maintained in
+[`qualcomm-linux/pkg-libdiag`](https://github.com/qualcomm-linux/pkg-libdiag).
 
 ---
 
-## What you get
+## Packages
 
-| Workflow | Trigger | Purpose |
+The CentOS 10 Stream spec currently produces these RPMs:
+
+| Package | Contents | Dependency |
 |---|---|---|
-| [`build-on-pr.yml`](.github/workflows/build-on-pr.yml) | Pull request | Build the RPM(s) so reviewers confirm the package still builds. Read-only — never publishes. |
-| [`pkg-release.yml`](.github/workflows/pkg-release.yml) | Manual (`workflow_dispatch`) | Build **and** publish the RPM(s) to Artifactory, behind an approval gate. |
+| `qcom-libdiag` | Versioned `libdiag.so.1*` runtime library and license | — |
+| `qcom-diag` | Diagnostic command-line tools and sample applications | `qcom-libdiag` |
+| `qcom-libdiag-devel` | Headers, the unversioned `libdiag.so` linker symlink, and `diag.pc` | `qcom-libdiag` |
 
-Both delegate to reusable workflows in `qcom-rpm-utils`, which run `rpmbuild`
-inside the prebuilt `rpm-builder` container image for the runner's host
-architecture.
-
----
-
-## Onboarding: step by step
-
-### 1. Create your repo from this template
-Use **"Use this template" → Create a new repository**, naming it
-`pkg-rpm-<component>` (e.g. `pkg-rpm-audio`). Clone it locally:
-
-```bash
-git clone https://github.com/qualcomm-linux/pkg-rpm-<component>.git
-cd pkg-rpm-<component>
-```
-
-### 2. Configure GitHub settings (one-time)
-
-> Template repositories copy **files only** — not variables, secrets, or
-> environments. You must set these on your new repo (Settings → …). If they are
-> defined at the **organization** level and shared with `pkg-rpm-*` repos, you
-> can skip the ones already inherited.
-
-| Setting | Kind | Where | Value / purpose |
-|---|---|---|---|
-| `CACHE_BASE_URL` | **Variable** | Secrets and variables → Actions → *Variables* | Base URL of the Artifactory lookaside cache, e.g. `https://qartifactory.qualcomm.com/artifactory/qualcomm-dnf-repo/sources` |
-| `ARTIFACTORY_ACCESS_TOKEN` | **Secret** | Secrets and variables → Actions → *Secrets* | Artifactory access token used to publish RPMs and cache sources back. Release only. **Current recommended credential.** |
-| `pkg-release-approval` | **Environment** | Environments | Approval gate for publishing — add required reviewers. |
-
-> **Publishing access:** the account behind `ARTIFACTORY_ACCESS_TOKEN` must be a
-> member of the [`centos.rpm.devs`](https://lists.qualcomm.com/ListManager?id=centos.rpm.devs)
-> Qualcomm list, or Artifactory will reject the upload. Request membership before
-> your first release.
-
-> **Note:** a `QSC_API_KEY` secret (exchanged for an Artifactory token, and taking
-> precedence over `ARTIFACTORY_ACCESS_TOKEN` when set) is also supported by the
-> release workflow. It is **not** the recommended path yet; this README will be
-> updated to prefer it once the QSC key issue is resolved.
-
-The build and publish jobs run on the shared AWS ephemeral ARM64 runner pool
-(`runs-on: [self-hosted, platform-prd-u2404-arm64-large-od-ephem]`), which has
-Docker available. That label is set inside the reusable workflows, so your repo
-must have access to that runner pool, or the jobs will queue forever waiting for
-a runner.
-
-The build pulls the prebuilt `rpm-builder` image from GHCR
-(`ghcr.io/qualcomm-linux/rpm-builder:centos10`). Both caller workflows therefore
-grant `packages: read`; keep that permission if you edit them.
-
-### 3. Add your package files at the repo root
-
-```
-<component>.spec     # exactly one RPM spec file
-sources              # checksum + filename of each source tarball
-```
-
-Starter copies are in [`examples/`](examples/) — copy them to the root and edit:
-
-```bash
-cp examples/mypackage.spec <component>.spec
-cp examples/sources sources
-```
-
-- **`<component>.spec`** — your RPM spec. Its `Source0:`/`SourceN:` must be a
-  real, fetchable URL whose **filename matches the `sources` entry** (use
-  `%{name}`/`%{version}` macros, and the `#/` rename trick when the URL basename
-  differs). Example:
-  ```
-  Source0: https://github.com/<org>/<proj>/archive/refs/tags/v%{version}.tar.gz#/%{name}-%{version}.tar.gz
-  ```
-- **`sources`** — one line per tarball, in `sha512sum --tag` (dist-git) format.
-  **The tarball is never committed to git.** Generate the line with:
-  ```bash
-  sha512sum --tag <component>-1.0.tar.gz > sources
-  ```
-  which yields:
-  ```
-  SHA512 (mycomponent-1.0.tar.gz) = 3a7bd3e2360a3d29eea436fcfb7e44c735d117c...
-  ```
-
-### 4. Open a PR
-Commit the spec + `sources` and open a PR. `build-on-pr` fetches the tarball
-(from the cache, or from the spec's `Source` URL on a cache miss), verifies its
-checksum, and builds the RPM(s). Download the built RPMs from the run's
-**Artifacts**; the package list is in the run **Summary**.
-
-### 5. Release (publish to Artifactory)
-After merge, go to **Actions → Release → Run workflow**:
-- A reviewer approves the `pkg-release-approval` gate.
-- Once approved, the RPM(s) are published to Artifactory.
+The prebuilt payload is currently restricted to **aarch64**. The package is
+licensed under **BSD-3-Clause**. The current CentOS 10 Stream package version is
+`1.0.5`.
 
 ---
 
-## Updating the package version
+## Branches
 
-This is the everyday workflow — **two edits, no tarball in git**:
+The repository follows a Fedora/CentOS dist-git-style branch layout:
 
-1. Bump `Version:` in the spec (and the `Source0:` URL if its path changed).
-2. Recompute the checksum for the new tarball:
-   ```bash
-   sha512sum --tag <component>-<newversion>.tar.gz > sources
-   ```
-3. Commit the spec + `sources`, open a PR (build verifies it), merge, then run
-   **Release**. The first release fetches the new upstream tarball, verifies it,
-   and caches it back to Artifactory automatically.
-
----
-
-## How sources are resolved (cache → upstream → cache-back)
-
-The dist-git **lookaside cache** model: git stores only the checksum; the tarball
-lives in Artifactory, content-addressed by that checksum.
-
-1. The build computes the cache path from `CACHE_BASE_URL` + the `sources` entry
-   and checks whether the tarball is already cached.
-2. **Cache hit** → download from the cache. **Cache miss** → download from the
-   spec's `Source` URL.
-3. The checksum is verified against `sources` (mismatch fails the build).
-4. On **release**, a tarball fetched from upstream is cached back so future
-   builds are hits.
-
-Published layout in Artifactory (defaults):
-```
-qualcomm-dnf-repo/10-stream/BaseOS/Packages/<pkg>-<ver>.<arch>.rpm
-qualcomm-dnf-repo/sources/<filename>/<hashtype>/<hash>/<filename>
-```
-
-All RPMs (binary and source) are dumped **flat** into
-`10-stream/BaseOS/Packages/` — there are no `src/` or `output/` subfolders.
-Artifactory's YUM indexer writes the `repodata/` (with YUM Metadata Folder Depth
-`2`, at `qualcomm-dnf-repo/10-stream/BaseOS/repodata/`).
-
----
-
-## Required configuration summary
-
-| Name | Kind | Required | Purpose |
-|---|---|---|---|
-| `CACHE_BASE_URL` | Variable | **Yes** | Lookaside cache base URL. Build fails fast if unset. |
-| `ARTIFACTORY_ACCESS_TOKEN` | Secret | Release only | Artifactory token for publishing/cache-back. Current recommended credential. |
-| `QSC_API_KEY` | Secret | Optional | Exchanged for an Artifactory token; takes precedence over `ARTIFACTORY_ACCESS_TOKEN`. Not the recommended path yet. |
-| `centos.rpm.devs` membership | Qualcomm list | Release only | The publishing account must belong to [`centos.rpm.devs`](https://lists.qualcomm.com/ListManager?id=centos.rpm.devs). |
-| `pkg-release-approval` | Environment | Release only | Approval gate before publishing. |
-| Runner pool access | — | Yes | Build/publish run on `[self-hosted, platform-prd-u2404-arm64-large-od-ephem]`. |
-
----
-
-## Troubleshooting
-
-| Symptom | Cause / fix |
+| Branch | Purpose |
 |---|---|
-| `cache-base-url is empty` | Define the `CACHE_BASE_URL` Actions **variable**. |
-| `denied` / `unauthorized` pulling `rpm-builder` from GHCR | The caller workflow is missing `packages: read`. |
-| Build job never starts (stuck *Queued*) | No runner from the `platform-prd-u2404-arm64-large-od-ephem` pool is available to the repo. |
-| `No 'sources' file found` | Add a `sources` file at the repo root. |
-| `Malformed line in 'sources'` | Each line must be `HASHTYPE (filename) = hexdigest`. Use `sha512sum --tag`. |
-| `not in the cache and no matching SourceN: URL` | The tarball isn't cached and no spec `Source` URL matches its filename. Fix the `Source0:` filename or pre-seed the cache. |
-| `Checksum mismatch` | The cached/upstream tarball doesn't match `sources`. Fix the checksum or the upstream URL. |
-| `No '*.spec' file` / `Multiple spec files` | Keep exactly one spec at the repo root. |
-| `403` on publish | The publishing account lacks Deploy permission on the target repo, or is not a member of the [`centos.rpm.devs`](https://lists.qualcomm.com/ListManager?id=centos.rpm.devs) list. Request access. |
+| [`main`](../../tree/main) | Repository documentation, shared workflows, and project files. |
+| [`c10s`](../../tree/c10s) | CentOS 10 Stream packaging branch containing `libdiag.spec`, `sources`, and the package workflows. |
 
-See [`docs/workflows.md`](docs/workflows.md) for the full guide.
+The package build and release work happens on [`c10s`](../../tree/c10s). See
+that branch's [`README.md`](../../tree/c10s/README.md) for the stream-specific
+maintenance instructions.
+
+---
+
+## Repository layout
+
+Common repository files live on `main`:
+
+```
+README.md                  # Project overview and maintenance guidance
+docs/workflows.md          # Shared CI, source-cache, and release reference
+.github/workflows/         # GitHub Actions workflow callers
+LICENSE.txt                # Repository license
+```
+
+The package definition lives on `c10s`:
+
+```
+libdiag.spec               # RPM spec and package split
+sources                    # Source tarball checksum and filename
+```
+
+The repository intentionally tracks the spec and checksum pointer, not the
+binary source tarball itself.
+
+---
+
+## Maintaining the package
+
+Make package changes on the [`c10s`](../../tree/c10s) branch.
+
+### Update the version
+
+1. Bump `Version:` in [`libdiag.spec`](../../blob/c10s/libdiag.spec). Update the
+   `Source0:` URL as well if the upstream Artifactory path changes.
+2. Obtain the matching prebuilt tarball and regenerate `sources` with its exact
+   filename. The current naming pattern is
+   `diag-<version>_<build>.el10.aarch64.tar.gz`:
+
+   ```bash
+   sha512sum --tag diag-<newversion>_<build>.el10.aarch64.tar.gz > sources
+   ```
+
+   The filename in `sources` must match the `Source0:` basename exactly.
+3. Commit the spec and `sources` changes and open a pull request against `c10s`.
+   The PR build verifies the checksum and builds the RPMs.
+4. After the change is merged, run **Actions → Release → Run workflow** on the
+   `c10s` branch. The release workflow builds and publishes the RPMs after the
+   configured approval gate.
+
+Source tarballs are resolved from the Artifactory lookaside cache when
+available. On a cache miss, the build downloads the tarball from `Source0:` and
+verifies it against `sources`; release builds can cache a verified download for
+future builds. See [`docs/workflows.md`](docs/workflows.md) for the shared
+workflow and source-resolution details.
+
+---
+
+## Related documentation
+
+- [`c10s/README.md`](../../tree/c10s/README.md) — CentOS 10 Stream package-branch instructions
+- [`docs/workflows.md`](docs/workflows.md) — CI, lookaside-cache, and release behavior
+- [`libdiag.spec`](../../blob/c10s/libdiag.spec) — current RPM metadata and file split
+- [`sources`](../../blob/c10s/sources) — current source checksum pointer
+- [`qualcomm-linux/pkg-libdiag`](https://github.com/qualcomm-linux/pkg-libdiag) — corresponding Debian packaging
