@@ -2,9 +2,9 @@
 Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
 SPDX-License-Identifier: BSD-3-Clause
 -->
-# Package branch — CentOS 10 Stream (`c10s`)
+# libdiag (Diagnostic library)
 
-**This is the branch you work on.** It holds the `libdiag` RPM's spec file
+**This is the branch for CentOS 10 Stream (`c10s`).** It holds the `libdiag` RPM's spec file
 and `sources` pointer, plus the CI workflows that build and publish them.
 
 Following the Fedora/CentOS **dist-git** convention, each distro stream gets its
