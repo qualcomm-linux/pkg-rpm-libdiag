@@ -1,4 +1,4 @@
-# Contributing to <REPLACE-ME>
+# Contributing to pkg-rpm-libdiag
 
 Hi there!
 We’re thrilled that you’d like to contribute to this project.
@@ -6,15 +6,15 @@ Your help is essential for keeping this project great and for making it better.
 
 ## Branching Strategy
 
-Development happens directly on branch main. Open a PR targeting main
+Development happens directly on respective branches. Open a PR targeting branch
 
 ## Submitting a pull request
 
 1. Please read our [code of conduct](CODE-OF-CONDUCT.md) and [license](LICENSE.txt).
-1. [Fork](https://github.com/qualcomm-linux/pkg-template/fork) and clone the repository.
+1. [Fork](https://github.com/qualcomm-linux/pkg-rpm-libdiag/fork) and clone the repository.
 
     ```bash
-    git clone https://github.com/qualcomm-linux/pkg-template.git
+    git clone https://github.com/qualcomm-linux/pkg-rpm-libdiag.git
     ```
 
 1. Create a new branch based on `main`:
@@ -26,7 +26,7 @@ Development happens directly on branch main. Open a PR targeting main
 1. Create an upstream `remote` to make it easier to keep your branches up-to-date:
 
     ```bash
-    git remote add upstream https://github.com/qualcomm/<REPLACE-ME>.git
+    git remote add upstream https://github.com/qualcomm-linux/pkg-rpm-libdiag.git
     ```
 
 1. Make your changes, add tests, and make sure the tests still pass.
@@ -50,7 +50,7 @@ Development happens directly on branch main. Open a PR targeting main
 
     The `-u` is shorthand for `--set-upstream`. This will set up the tracking reference so subsequent runs of `git push` or `git pull` can omit the remote and branch.
 
-1. [Submit a pull request](https://github.com/qualcomm/<REPLACE-ME>/pulls) from your branch to `main`.
+1. [Submit a pull request](https://github.com/qualcomm-linux/pkg-rpm-libdiag/pulls) from your branch to `main`.
 1. Pat yourself on the back and wait for your pull request to be reviewed.
 
 ## Security Analysis of Pull Requests
@@ -68,7 +68,7 @@ By submitting a PR, you agree to participate in this process and help us keep th
 
 Here are a few things you can do that will increase the likelihood of your pull request to be accepted:
 
-- Follow the existing style where possible. **INSERT LINK TO STYLE, e.g. PEP8 for python**
+- Follow the existing style where possible.
 - Write tests.
 - Keep your change as focused as possible.
   If you want to make multiple independent changes, please consider submitting them as separate pull requests.
